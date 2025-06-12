@@ -35,6 +35,7 @@
               lcov
               gdb
               gtest
+              gbenchmark
               gcc
               gcovr
               meson

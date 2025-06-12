@@ -45,7 +45,7 @@ shared_target = shared_library(
     meson.project_name(),
     dependencies: deps,
     include_directories : include_dir,
-    sources : src,
+#    sources : src,
     install : true,
     cpp_args : build_args
 )
@@ -54,7 +54,7 @@ static_target = static_library(
     meson.project_name(),
     dependencies: deps,
     include_directories : include_dir,
-    sources : src,
+#    sources : src,
     install : true,
     cpp_args : build_args
 )
@@ -98,6 +98,17 @@ if not meson.is_subproject()
       'graph_test',
       test_files,
       dependencies : [project_deps, test_dep],
+      install : false
+    )
+  )
+
+  subdir('benchmark')
+
+  test('all_benchmarks',
+    executable(
+      'graph_benchmark',
+      bench_files,
+      dependencies : [project_deps, bench_dep],
       install : false
     )
   )
