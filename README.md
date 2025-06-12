@@ -1,2 +1,2 @@
-# multitree
-A multi-tree implementation in C++
+# Graph
+Trying to make a graph in "modern" C++
