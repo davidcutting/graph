@@ -176,6 +176,12 @@ private:
     NodeID start_;
 
     struct iterator {
+        using iterator_category = std::input_iterator_tag;
+        using value_type = NodeID;
+        using difference_type = std::ptrdiff_t;
+        using pointer = const NodeID*;
+        using reference = const NodeID&;
+
         const G *graph_;
         std::stack<NodeID> stack_;
         std::unordered_set<NodeID> visited_;
@@ -238,6 +244,12 @@ private:
     NodeID start_;
 
     struct iterator {
+        using iterator_category = std::input_iterator_tag;
+        using value_type = NodeID;
+        using difference_type = std::ptrdiff_t;
+        using pointer = const NodeID*;
+        using reference = const NodeID&;
+
         const G *graph_;
         std::queue<NodeID> queue_;
         std::unordered_set<NodeID> visited_;
@@ -268,14 +280,18 @@ private:
 
                 if (!queue_.empty()) {
                     current_ = queue_.front();
+                } else {
+                    graph_ = nullptr;  // Marks the end
                 }
+            } else {
+                graph_ = nullptr;
             }
+
             return *this;
         }
 
         bool operator==(const iterator &other) const {
-            return (graph_ == nullptr && other.graph_ == nullptr) ||
-                   (graph_ == other.graph_ && queue_.empty() && other.queue_.empty());
+            return (graph_ == nullptr && other.graph_ == nullptr);
         }
     };
 
@@ -336,70 +352,70 @@ public:
     bool is_valid() const { return !sorted_nodes_.empty(); }  // Has no cycles
 };
 
-// Pipe operator support (Oh god what in the world)
-// -------------------------
+// -------------------------------------------------------------
 
 struct dfs_view_closure {
     NodeID start;
     constexpr explicit dfs_view_closure(NodeID s) : start(s) {}
 
     template <DirectedGraphLike G>
-    constexpr auto operator()(const G &g) const {
-        return bfs_view_t(g, start);
+    constexpr auto operator()(const G& graph) const {
+        return dfs_view_t<G>{graph, start};
     }
 };
+
 struct dfs_view_fn {
-    constexpr auto operator()(NodeID s) const { return dfs_view_closure{s}; }
+    constexpr auto operator()(NodeID s) const {
+        return dfs_view_closure{s};
+    }
 };
+
 inline constexpr dfs_view_fn dfs_view;
 
-// -------------------------
+// -------------------------------------------------------------
 
 struct bfs_view_closure {
     NodeID start;
     constexpr explicit bfs_view_closure(NodeID s) : start(s) {}
 
     template <DirectedGraphLike G>
-    constexpr auto operator()(const G &g) const {
-        return bfs_view_t(g, start);
+    constexpr auto operator()(const G& graph) const {
+        return bfs_view_t<G>{graph, start};
     }
 };
+
 struct bfs_view_fn {
-    constexpr auto operator()(NodeID s) const { return bfs_view_closure{s}; }
+    constexpr auto operator()(NodeID s) const {
+        return bfs_view_closure{s};
+    }
 };
+
 inline constexpr bfs_view_fn bfs_view;
 
-// -------------------------
+// -------------------------------------------------------------
 
 struct topological_view_fn {
     template <DirectedGraphLike G>
-    constexpr auto operator()(const G &graph) const {
-        return topological_view_t(graph);
+    constexpr auto operator()(const G& graph) const {
+        return topological_view_t<G>(graph);
     }
 };
+
 inline constexpr topological_view_fn topological_view;
 
 }  // namespace graph::view
 
-// Pipe operator overloads for std::ranges API
 template <graph::DirectedGraphLike G>
-constexpr auto operator|(const G &graph, const graph::view::dfs_view_fn &fn) {
-    return fn(graph);
+constexpr auto operator|(const G& graph, const graph::view::bfs_view_closure& closure) {
+    return closure(graph);
 }
 
 template <graph::DirectedGraphLike G>
-constexpr auto operator|(const G &graph, const graph::view::bfs_view_fn &fn) {
-    return fn(graph);
+constexpr auto operator|(const G& graph, const graph::view::dfs_view_closure& closure) {
+    return closure(graph);
 }
 
 template <graph::DirectedGraphLike G>
-constexpr auto operator|(const G &graph, const graph::view::topological_view_fn &fn) {
+constexpr auto operator|(const G& graph, const graph::view::topological_view_fn& fn) {
     return fn(graph);
-}
-
-template <graph::DirectedGraphLike G>
-constexpr auto operator|(const G &graph, auto &&fn)
-    requires requires(const G &g, graph::NodeID start) { fn(g, start); }
-{
-    return [&graph, fn = std::forward<decltype(fn)>(fn)](graph::NodeID start) { return fn(graph, start); };
 }
