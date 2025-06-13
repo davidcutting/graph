@@ -89,13 +89,16 @@ public:
     CompiledGraph(const DirectedGraph &directed_graph) : max_node_id_(0) {
         const auto &adj_list = directed_graph.adjacency_list_;
 
-        // Find the maximum node ID to size our offset array
-        for (const auto &[node, _] : adj_list) {
-            max_node_id_ = std::max(max_node_id_, node);
+        max_node_id_ = std::ranges::max(adj_list | std::views::keys);
+
+        // Calculate total edges for reservation
+        size_t total_edges = 0;
+        for (const auto& successors : adj_list | std::views::values) {
+            total_edges += successors.size();
         }
 
-        // Size offsets array to accommodate all possible node IDs
         offsets_.resize(static_cast<size_t>(max_node_id_) + 2, 0);
+        destinations_.reserve(total_edges);
 
         size_t offset = 0;
         for (NodeID node = 0; node <= max_node_id_; ++node) {
